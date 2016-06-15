@@ -1,0 +1,8 @@
+setwd("")   #insert the path where your files are located at
+#install.packages("neuralnet") 
+train_data = read.table("train_data.txt",header= T) # read train data 
+test_data = read.table("test_data.txt", header= T) #read test data # if not having two files for train and test, create 70/30 from original data set
+nam=names(as.data.frame(train_data))   # captures names for creating formula. Uses all field in the test data file
+f <- as.formula(paste("Benefit ~", paste(nam[!nam %in% "Benefit"], collapse = " + "))) 
+# creates a formula where "Benefit" is the dependent variable. If you have lot of independent variables, this technique is very useful
+neural_model=neuralnet(f,data=train_data ,stepmax=1e6,hidden=4)
