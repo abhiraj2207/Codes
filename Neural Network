@@ -1,8 +1,23 @@
-setwd("")   #insert the path where your files are located at
-#install.packages("neuralnet") 
+#Package & library installation
+setwd("")   #insert the path between "" where your files are located at
+#install.packages("neuralnet")   #one time step
+library("neuralnet")
+
+#Reading the data
 train_data = read.table("train_data.txt",header= T) # read train data 
 test_data = read.table("test_data.txt", header= T) #read test data # if not having two files for train and test, create 70/30 from original data set
 nam=names(as.data.frame(train_data))   # captures names for creating formula. Uses all field in the test data file
 f <- as.formula(paste("Benefit ~", paste(nam[!nam %in% "Benefit"], collapse = " + "))) 
 # creates a formula where "Benefit" is the dependent variable. If you have lot of independent variables, this technique is very useful
-neural_model=neuralnet(f,data=train_data ,stepmax=1e6,hidden=4)
+
+# Buliding the model
+neural_model=neuralnet(f,data=train_data ,stepmax=1e6,hidden=1,err.fct ="sse",linear.output=TRUE)
+#this is a trial and error step, allows different activation function, number of hidden layers , steps and error function. User to try options suiting to application
+plot(neural_model)  #Visualizing the neural network
+
+#Predicting from the model
+predict_neural=(compute(neural_model,test_data[,-1]))$net.result  #remember to exlude the depenedent variable (first column here) while passing this code
+
+#Error on test set Mean Absolute Percentage Error MAPE
+mape_error = mean(abs(test_data[,1]-predict_neural)/test_data[,1])*100
+mape_error   # Gives Percentage Error of the model
