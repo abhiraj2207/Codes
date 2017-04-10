@@ -1,0 +1,127 @@
+library(igraph)
+stem_data = read.csv("C:\\Users\\Abhay Raj\\Desktop\\Collusion\\Dental\\Dental_records.csv",header = T)[,c(1,2,6)]
+colnames(stem_data) = c("to","from","weight")
+options(max.print=1000000)
+##################################################
+net = graph.data.frame(d=stem_data,directed=F) 
+net1 <- simplify(net)
+length(V(net1))
+#Based on greedy
+cfg <- fastgreedy.community(as.undirected(net1))
+cfg_member=as.data.frame(membership(cfg))
+sink("Greedy_members.csv")
+cfg_member
+sink()
+
+#Based on leading eigenvector of community 
+led_edge=leading.eigenvector.community(net1)
+led_members=as.data.frame(membership(led_edge))
+sink("Eigen_members.csv")
+led_members
+sink()
+
+#Based on walktrap Community
+wtc=walktrap.community(net1)
+wtc_members=as.data.frame(membership(wtc))
+sink("WalkTrap_members.csv")
+wtc_members
+sink()
+
+#Based on Label propogation
+lpa = label.propagation.community(net1)
+lpa_members=as.data.frame(membership(lpa))
+sink("Lpa_members.csv")
+lpa_members
+sink()
+
+#######################################################
+# For visual
+vis_data = read.csv("C:\\Users\\Abhay Raj\\Desktop\\Collusion\\Remedial\\Rem_vis.csv",header = T)
+colnames(vis_data) = c("to","from","weight")
+dodgy = as.data.frame(read.table("C:\\Users\\Abhay Raj\\Desktop\\MJP001\\Collusion\\Remedial\\Dodgy.txt",header = T))
+#colnames(dodgy) = "d"
+net_vis = graph.data.frame(d=vis_data,directed=F,vertices = dodgy) 
+net_vis = simplify(net_vis, remove.multiple = T, remove.loops = T) 
+
+V(net_vis)$color <- ifelse(V(net_vis)$Atttribute == "Other", "grey",ifelse(V(net_vis)$Atttribute == "Cluster", "black","red"))
+E(net_vis)$width <- E(net_vis)$weight*600
+l <- layout.lgl(net_vis)
+plot(net_vis, edge.arrow.size=.01,vertex.label=NA,vertex.size=4,layout=l)
+prop_vis = label.propagation.community(as.undirected(net_vis))
+fg_vis=fastgreedy.community(as.undirected(net_vis))
+plot(net_vis, fg_vis,vertex.label=NA,edge.color = "black",vertex.color="grey") 
+View(as.data.frame(membership(prop_vis)))
+ceb_vis = edge.betweenness.community(net_vis)
+dendPlot(ceb_vis, mode="hclust")
+plot(ceb_vis,net_vis)
+##################################################3
+
+comm.graph <- contract.vertices(net1, wtc$membership, vertex.attr.comb=list(size="sum", "ignore"))
+comm.graph <- simplify(comm.graph, remove.loops=FALSE, edge.attr.comb=list(count="sum", "ignore"))
+plot(comm.graph)[48]
+
+
+
+ceb = edge.betweenness.community(net1)
+dendPlot(ceb, mode="hclust")
+max(ceb$csize)
+ceb$csize
+kc=graph.coreness(net,mode="all")
+plot(net, vertex.size=kc*6, vertex.label=kc)
+
+get.shortest.paths(net)
+average.path.length(net)
+
+
+
+
+
+
+
+
+####################################################################
+exp1 = as.data.frame(cbind(to = c(1,2,1,4,5),from =c(20,20,30,40,20),
+                           weights=c(200,300,400,200,600) ))
+net2 = graph.data.frame(d=exp1,directed=T) 
+ceb1 = edge.betweenness.community(net2,directed=TRUE,weights=NULL)
+dendPlot(ceb1,mode="hclust")
+plot(ceb1,net2)
+membership(ceb1)
+
+
+
+###################################################
+len = NA
+exp_array = matrix(NA,nrow = nrow(stem_data) , ncol =2)
+
+for (i in 1:nrow(stem_data))
+{
+  len[i]=as.numeric(length(subset(stem_data,from==stem_data$from[i])$to))
+  
+  exp_array[i,1:len[i]] = as.numeric(as.character.factor(subset(stem_data,
+                                                                from==stem_data$from[i])$to))
+  
+}
+View(as.data.frame(exp_array))
+#####################################################################
+len = NA
+#exp_array = matrix(NA,ncol=3,nrow=nrow(stem_data)*10)
+exp_array = matrix(NA,ncol=3,nrow=70000)
+k=1
+for (i in 1:nrow(stem_data))
+{
+  len[i]=as.numeric(length(subset(stem_data,from==stem_data$from[i])$to))
+  
+  exp_array[as.numeric(k):as.numeric(k+len[i]-1),1] = as.numeric((stem_data$to[i]))
+  exp_array[as.numeric(k):as.numeric(k+len[i]-1),2] = as.numeric((subset(stem_data,
+                                                                         from==stem_data$from[i])$to))
+  exp_array[as.numeric(k):as.numeric(k+len[i]-1),3] = as.numeric((stem_data$weight[i]))
+  k = k + len[i]
+  #print (i)
+}
+
+exp_array2=as.data.frame(exp_array)[1:as.numeric(min(which(is.na(exp_array1$V1),TRUE))-1),]
+sink("result_r.csv")
+exp_array2
+sink()
+View(as.data.frame(exp_array))
